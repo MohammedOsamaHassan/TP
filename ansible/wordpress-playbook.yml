@@ -1,0 +1,50 @@
+---
+- name: Install WordPress on Ubuntu EC2
+  hosts: wordpress
+  become: yes
+
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - apache2
+          - php
+          - php-mysql
+          - mysql-client
+          - wget
+          - unzip
+          - libapache2-mod-php
+        state: present
+
+    - name: Download and extract WordPress
+      shell: |
+        cd /var/www/html
+        wget https://wordpress.org/latest.zip
+        unzip -o latest.zip
+        mv wordpress/* .
+        rm -rf wordpress latest.zip
+      args:
+        executable: /bin/bash
+
+    - name: Set permissions
+      file:
+        path: /var/www/html
+        owner: www-data
+        group: www-data
+        recurse: yes
+    - name: Configure wp-config.php
+      template:
+        src: wp-config.php.j2
+        dest: /var/www/html/wp-config.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
